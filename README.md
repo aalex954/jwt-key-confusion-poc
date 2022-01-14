@@ -2,8 +2,8 @@
 
 Written for the Hack the Box challenge - Under Construction
 
-This script performs a Java Web Token Key Confusion Attack. 
-To perform the attack it is required that the attacker know the public key which the server will use to verify the signature as well as the server being configured to use the HS256 algorithm. Because HS256 is a symmetric-key algorithm (the same key is used to sign and verify the message), we can use the public key to sign our tampered cookie. 
+This script performs a Java Web Token Key Confusion Attack (CVE-2015-9235). 
+To perform the attack it is required that the attacker know the public key which the server will use to verify the signature as well as the server being configured to use the HS256 algorithm. Because HS256 is a symmetric-key algorithm (the same key is used to sign and verify the message), we can use the public key to sign our tampered token. 
 Since the web server knows the public key, when it receives the tampered token it will be able to verify it. 
 
 ## Screenshot
